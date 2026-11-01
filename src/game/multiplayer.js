@@ -1,8 +1,10 @@
 /**
  * Type Rush — Real-Time 1v1 Multiplayer Client Module (Vanilla JS)
- * Supports two automatic transports:
- * 1. Authoritative WebSocket Server (/ws) when hosted on a Node.js server.
- * 2. Serverless P2P / BroadcastChannel fallback when hosted on static hosts like GitHub Pages!
+ *
+ * Supports two seamless real-time transports:
+ * 1. Local/Cloud Run WebSocket Server (/ws) when running with server.ts.
+ * 2. Serverless Cross-Device WebSocket Relay (MQTT over WSS + BroadcastChannel)
+ *    for static deployments such as GitHub Pages (*.github.io), Netlify, or Vercel!
  */
 
 import { generateWordSequence } from './words.js';
@@ -10,7 +12,12 @@ import { generateWordSequence } from './words.js';
 const PLAYER_NAME_KEY = 'type_rush_player_name';
 const SESSION_PLAYER_ID_KEY = 'type_rush_session_player_id';
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const PEER_PREFIX = 'typerush-1v1-room-';
+const TOPIC_PREFIX = 'typerush/v2/room/';
+
+const PUBLIC_WSS_BROKERS = [
+  'wss://broker.emqx.io:8084/mqtt',
+  'wss://broker.hivemq.com:8884/mqtt'
+];
 
 export function getOrCreatePlayerId() {
   try {
@@ -72,18 +79,42 @@ function createPlayerModel(id, name, isHost) {
   };
 }
 
+let cachedMqttLibPromise = null;
+function loadMqttLibrary() {
+  if (!cachedMqttLibPromise) {
+    cachedMqttLibPromise = import(/* @vite-ignore */ 'https://esm.sh/mqtt@5.10.3').then(
+      (mod) => mod.default || mod
+    );
+  }
+  return cachedMqttLibPromise;
+}
+
+function isKnownStaticHost() {
+  if (typeof window === 'undefined') return false;
+  const host = (window.location.hostname || '').toLowerCase();
+  return (
+    host.endsWith('.github.io') ||
+    host.endsWith('.pages.dev') ||
+    host.endsWith('.netlify.app') ||
+    host.endsWith('.vercel.app') ||
+    window.location.protocol === 'file:'
+  );
+}
+
 export function createMultiplayerClient(handlers = {}) {
   const playerId = getOrCreatePlayerId();
   let socket = null;
   let pendingQueue = [];
   let currentRoom = null;
-  let useStaticFallback = false;
+  let useStaticFallback = isKnownStaticHost();
 
-  // Static fallback state (BroadcastChannel + optional PeerJS for GitHub Pages)
+  // Static relay state (MQTT over WSS + BroadcastChannel)
   let bcChannel = null;
-  let peerInstance = null;
-  let peerConn = null;
+  let mqttClient = null;
+  let activeRoomCode = null;
   let isStaticHost = false;
+  let joinRetryInterval = null;
+  let joinTimeoutTimer = null;
 
   function handleIncomingServerMessage(msg) {
     const { type, payload } = msg || {};
@@ -113,9 +144,21 @@ export function createMultiplayerClient(handlers = {}) {
   }
 
   // ==========================================
-  // STATIC HOST FALLBACK (GitHub Pages P2P + BroadcastChannel)
+  // STATIC RELAY TRANSPORT (GitHub Pages Cross-Device WSS + BroadcastChannel)
   // ==========================================
+  function clearJoinTimers() {
+    if (joinRetryInterval) {
+      clearInterval(joinRetryInterval);
+      joinRetryInterval = null;
+    }
+    if (joinTimeoutTimer) {
+      clearTimeout(joinTimeoutTimer);
+      joinTimeoutTimer = null;
+    }
+  }
+
   function cleanupStaticTransport() {
+    clearJoinTimers();
     if (bcChannel) {
       try {
         bcChannel.close();
@@ -124,57 +167,62 @@ export function createMultiplayerClient(handlers = {}) {
       }
       bcChannel = null;
     }
-    if (peerConn) {
+    if (mqttClient) {
       try {
-        peerConn.close();
+        mqttClient.end(true);
       } catch {
         // Ignore
       }
-      peerConn = null;
+      mqttClient = null;
     }
-    if (peerInstance) {
-      try {
-        peerInstance.destroy();
-      } catch {
-        // Ignore
-      }
-      peerInstance = null;
-    }
+    activeRoomCode = null;
   }
 
-  function sendOverStaticTransport(msg) {
+  function publishStaticEvent(msg, retainState = false) {
+    if (!activeRoomCode) return;
+    const envelope = { ...msg, senderId: playerId, ts: Date.now() };
+
     if (bcChannel) {
       try {
-        bcChannel.postMessage(msg);
+        bcChannel.postMessage(envelope);
       } catch {
         // Ignore
       }
     }
-    if (peerConn && peerConn.open) {
+
+    if (mqttClient && mqttClient.connected) {
+      const baseTopic = `${TOPIC_PREFIX}${activeRoomCode}`;
+      const json = JSON.stringify(envelope);
       try {
-        peerConn.send(msg);
+        mqttClient.publish(`${baseTopic}/events`, json, { qos: 1 });
+        if (retainState) {
+          mqttClient.publish(`${baseTopic}/state`, json, { qos: 1, retain: true });
+        }
       } catch {
-        // Ignore
+        // Ignore publish errors
       }
     }
   }
 
-  function handleStaticPeerMessage(msg) {
+  function handleStaticRelayMessage(msg) {
     if (!msg || typeof msg !== 'object') return;
+    if (msg.senderId === playerId) return;
 
     if (isStaticHost && currentRoom) {
       if (msg.type === 'static:join_request') {
         const guestId = String(msg.payload?.playerId || 'guest');
         let guestName = String(msg.payload?.playerName || 'Player 2').trim().slice(0, 18);
         const existing = currentRoom.players.find((p) => p.id === guestId);
+
         if (!existing && currentRoom.players.length >= 2) {
-          sendOverStaticTransport({
+          publishStaticEvent({
             type: 'room:error',
             targetId: guestId,
             payload: { message: `Room "${currentRoom.roomCode}" already has 2 players.` }
           });
           return;
         }
+
         if (!existing) {
           const hostName = currentRoom.players[0]?.name?.toLowerCase();
           if (hostName && guestName.toLowerCase() === hostName) {
@@ -182,8 +230,9 @@ export function createMultiplayerClient(handlers = {}) {
           }
           currentRoom.players.push(createPlayerModel(guestId, guestName, false));
         }
+
         const stateMsg = { type: 'room:state', payload: currentRoom };
-        sendOverStaticTransport(stateMsg);
+        publishStaticEvent(stateMsg, true);
         handleIncomingServerMessage(stateMsg);
         return;
       }
@@ -198,7 +247,7 @@ export function createMultiplayerClient(handlers = {}) {
         if (p) {
           Object.assign(p, msg.payload);
           const oppMsg = { type: 'opponent:progress', payload: { player: p } };
-          sendOverStaticTransport(oppMsg);
+          publishStaticEvent(oppMsg, false);
           handleIncomingServerMessage(oppMsg);
         }
         return;
@@ -207,36 +256,60 @@ export function createMultiplayerClient(handlers = {}) {
       if (msg.type === 'player:finished') {
         const p = currentRoom.players.find((item) => item.id === msg.payload?.playerId);
         if (p) {
-          Object.assign(p, msg.payload, { finished: true, finishReason: msg.payload?.reason || 'time' });
+          Object.assign(p, msg.payload, {
+            finished: true,
+            finishReason: msg.payload?.reason || 'time'
+          });
           const oppMsg = { type: 'opponent:progress', payload: { player: p } };
-          sendOverStaticTransport(oppMsg);
+          publishStaticEvent(oppMsg, false);
           handleIncomingServerMessage(oppMsg);
 
           const allFinished = currentRoom.players.every((item) => item.finished);
           if (allFinished || msg.payload?.reason === 'time') {
             currentRoom.status = 'finished';
             const finMsg = { type: 'match:finished', payload: currentRoom };
-            sendOverStaticTransport(finMsg);
+            publishStaticEvent(finMsg, true);
             handleIncomingServerMessage(finMsg);
           }
         }
         return;
       }
+
+      if (msg.type === 'room:leave') {
+        const leavingId = msg.payload?.playerId;
+        currentRoom.players = currentRoom.players.filter((p) => p.id !== leavingId);
+        currentRoom.status = 'waiting';
+        const leftMsg = { type: 'opponent:left', payload: currentRoom };
+        publishStaticEvent(leftMsg, true);
+        handleIncomingServerMessage(leftMsg);
+      }
     } else {
       // Guest receiving messages from Host
       if (msg.type === 'room:error' && (!msg.targetId || msg.targetId === playerId)) {
+        clearJoinTimers();
         handleIncomingServerMessage(msg);
         return;
       }
+
+      if (msg.type === 'room:state' && msg.payload?.roomCode === activeRoomCode) {
+        const amIInRoom = (msg.payload.players || []).some((p) => p.id === playerId);
+        if (amIInRoom) {
+          clearJoinTimers();
+          handleIncomingServerMessage(msg);
+        }
+        return;
+      }
+
       if (
-        msg.type === 'room:state' ||
         msg.type === 'match:started' ||
         msg.type === 'match:finished' ||
         msg.type === 'opponent:left'
       ) {
+        clearJoinTimers();
         handleIncomingServerMessage(msg);
         return;
       }
+
       if (msg.type === 'opponent:progress' && msg.payload?.player?.id !== playerId) {
         handleIncomingServerMessage(msg);
       }
@@ -263,35 +336,46 @@ export function createMultiplayerClient(handlers = {}) {
       p.finishReason = null;
     }
     const startMsg = { type: 'match:started', payload: currentRoom };
-    sendOverStaticTransport(startMsg);
+    publishStaticEvent(startMsg, true);
     handleIncomingServerMessage(startMsg);
   }
 
-  async function initPeerJsIfAvailable(roomCode, asHost, onConnected) {
-    try {
-      const mod = await import('https://esm.sh/peerjs@1.5.4');
-      const Peer = mod.Peer || mod.default;
-      if (!Peer) return;
+  async function connectStaticRelay(roomCode, onReady) {
+    activeRoomCode = roomCode;
 
-      if (asHost) {
-        peerInstance = new Peer(`${PEER_PREFIX}${roomCode}`);
-        peerInstance.on('connection', (conn) => {
-          peerConn = conn;
-          conn.on('data', (data) => handleStaticPeerMessage(data));
+    if (typeof window.BroadcastChannel !== 'undefined') {
+      bcChannel = new window.BroadcastChannel(`${TOPIC_PREFIX}${roomCode}`);
+      bcChannel.onmessage = (ev) => handleStaticRelayMessage(ev.data);
+    }
+
+    try {
+      const mqtt = await loadMqttLibrary();
+      const baseTopic = `${TOPIC_PREFIX}${roomCode}`;
+      const client = mqtt.connect(PUBLIC_WSS_BROKERS[0], {
+        keepalive: 30,
+        reconnectPeriod: 1500,
+        connectTimeout: 5000
+      });
+      mqttClient = client;
+
+      client.on('connect', () => {
+        if (mqttClient !== client) return;
+        client.subscribe([`${baseTopic}/events`, `${baseTopic}/state`], { qos: 1 }, () => {
+          onReady?.();
         });
-      } else {
-        peerInstance = new Peer();
-        peerInstance.on('open', () => {
-          const conn = peerInstance.connect(`${PEER_PREFIX}${roomCode}`, { reliable: true });
-          peerConn = conn;
-          conn.on('open', () => {
-            onConnected?.();
-          });
-          conn.on('data', (data) => handleStaticPeerMessage(data));
-        });
-      }
+      });
+
+      client.on('message', (_topic, payloadBuf) => {
+        try {
+          const parsed = JSON.parse(payloadBuf.toString());
+          handleStaticRelayMessage(parsed);
+        } catch {
+          // Ignore malformed payload
+        }
+      });
     } catch {
-      // BroadcastChannel still works even if offline / CDN blocked
+      // BroadcastChannel still works locally even if offline
+      onReady?.();
     }
   }
 
@@ -318,12 +402,12 @@ export function createMultiplayerClient(handlers = {}) {
         players: [hostPlayer]
       };
 
-      if (typeof window.BroadcastChannel !== 'undefined') {
-        bcChannel = new window.BroadcastChannel(`${PEER_PREFIX}${roomCode}`);
-        bcChannel.onmessage = (ev) => handleStaticPeerMessage(ev.data);
-      }
-      initPeerJsIfAvailable(roomCode, true);
       handleIncomingServerMessage({ type: 'room:state', payload: currentRoom });
+      connectStaticRelay(roomCode, () => {
+        if (currentRoom && isStaticHost) {
+          publishStaticEvent({ type: 'room:state', payload: currentRoom }, true);
+        }
+      });
       return;
     }
 
@@ -339,14 +423,47 @@ export function createMultiplayerClient(handlers = {}) {
         }
       };
 
-      if (typeof window.BroadcastChannel !== 'undefined') {
-        bcChannel = new window.BroadcastChannel(`${PEER_PREFIX}${roomCode}`);
-        bcChannel.onmessage = (ev) => handleStaticPeerMessage(ev.data);
-        bcChannel.postMessage(joinReq);
-      }
-      initPeerJsIfAvailable(roomCode, false, () => {
-        sendOverStaticTransport(joinReq);
+      connectStaticRelay(roomCode, () => {
+        publishStaticEvent(joinReq, false);
       });
+
+      // Immediately broadcast over BroadcastChannel for same-browser tabs
+      publishStaticEvent(joinReq, false);
+
+      // Retry join request every 600ms until host acknowledges
+      joinRetryInterval = setInterval(() => {
+        if (currentRoom && (currentRoom.players || []).some((p) => p.id === playerId)) {
+          clearJoinTimers();
+          return;
+        }
+        publishStaticEvent(joinReq, false);
+      }, 600);
+
+      joinTimeoutTimer = setTimeout(() => {
+        if (!currentRoom || !(currentRoom.players || []).some((p) => p.id === playerId)) {
+          clearJoinTimers();
+          handleIncomingServerMessage({
+            type: 'room:error',
+            payload: { message: `Room "${roomCode}" was not found or host is offline.` }
+          });
+        }
+      }, 8000);
+      return;
+    }
+
+    if (type === 'room:config') {
+      if (isStaticHost && currentRoom) {
+        const rawConfig = payload.config || {};
+        if (['all', 'easy', 'medium', 'hard'].includes(rawConfig.difficulty)) {
+          currentRoom.config.difficulty = rawConfig.difficulty;
+        }
+        if ([30, 60, 90].includes(Number(rawConfig.duration))) {
+          currentRoom.config.duration = Number(rawConfig.duration);
+        }
+        const stateMsg = { type: 'room:state', payload: currentRoom };
+        publishStaticEvent(stateMsg, true);
+        handleIncomingServerMessage(stateMsg);
+      }
       return;
     }
 
@@ -354,7 +471,7 @@ export function createMultiplayerClient(handlers = {}) {
       if (isStaticHost) {
         startStaticMatchOnHost();
       } else {
-        sendOverStaticTransport({ type, payload });
+        publishStaticEvent({ type, payload }, false);
       }
       return;
     }
@@ -364,24 +481,39 @@ export function createMultiplayerClient(handlers = {}) {
         const me = currentRoom.players.find((p) => p.id === playerId);
         if (me) {
           Object.assign(me, payload);
-          sendOverStaticTransport({ type: 'opponent:progress', payload: { player: me } });
+          publishStaticEvent({ type: 'opponent:progress', payload: { player: me } }, false);
         }
       } else {
-        sendOverStaticTransport({ type: 'player:progress', payload });
+        publishStaticEvent({ type: 'player:progress', payload }, false);
       }
       return;
     }
 
     if (type === 'player:finished') {
       if (isStaticHost && currentRoom) {
-        handleStaticPeerMessage({ type: 'player:finished', payload });
+        const me = currentRoom.players.find((p) => p.id === playerId);
+        if (me) {
+          Object.assign(me, payload, {
+            finished: true,
+            finishReason: payload?.reason || 'time'
+          });
+          publishStaticEvent({ type: 'opponent:progress', payload: { player: me } }, false);
+          const allFinished = currentRoom.players.every((item) => item.finished);
+          if (allFinished || payload?.reason === 'time') {
+            currentRoom.status = 'finished';
+            const finMsg = { type: 'match:finished', payload: currentRoom };
+            publishStaticEvent(finMsg, true);
+            handleIncomingServerMessage(finMsg);
+          }
+        }
       } else {
-        sendOverStaticTransport({ type: 'player:finished', payload });
+        publishStaticEvent({ type: 'player:finished', payload }, false);
       }
       return;
     }
 
     if (type === 'room:leave') {
+      publishStaticEvent({ type: 'room:leave', payload }, false);
       cleanupStaticTransport();
       currentRoom = null;
     }
@@ -414,34 +546,36 @@ export function createMultiplayerClient(handlers = {}) {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws`;
 
+    let wsInstance = null;
     try {
-      socket = new WebSocket(wsUrl);
+      wsInstance = new WebSocket(wsUrl);
+      socket = wsInstance;
     } catch {
       switchToStaticFallback();
       return null;
     }
 
     const fallbackTimer = setTimeout(() => {
-      if (socket && socket.readyState !== WebSocket.OPEN) {
+      if (wsInstance && wsInstance.readyState !== WebSocket.OPEN) {
         try {
-          socket.close();
+          wsInstance.close();
         } catch {
           // Ignore
         }
         switchToStaticFallback();
       }
-    }, 1800);
+    }, 900);
 
-    socket.addEventListener('open', () => {
+    wsInstance.addEventListener('open', () => {
       clearTimeout(fallbackTimer);
       const queue = [...pendingQueue];
       pendingQueue = [];
       for (const item of queue) {
-        socket.send(JSON.stringify(item));
+        wsInstance.send(JSON.stringify(item));
       }
     });
 
-    socket.addEventListener('message', (event) => {
+    wsInstance.addEventListener('message', (event) => {
       try {
         const msg = JSON.parse(event.data);
         handleIncomingServerMessage(msg);
@@ -450,23 +584,23 @@ export function createMultiplayerClient(handlers = {}) {
       }
     });
 
-    socket.addEventListener('error', () => {
+    wsInstance.addEventListener('error', () => {
       clearTimeout(fallbackTimer);
       if (!currentRoom) {
         switchToStaticFallback();
       }
     });
 
-    socket.addEventListener('close', () => {
+    wsInstance.addEventListener('close', () => {
       clearTimeout(fallbackTimer);
       if (!currentRoom && pendingQueue.length > 0) {
         switchToStaticFallback();
-      } else {
+      } else if (socket === wsInstance) {
         socket = null;
       }
     });
 
-    return socket;
+    return wsInstance;
   }
 
   function send(type, payload = {}) {
@@ -476,19 +610,15 @@ export function createMultiplayerClient(handlers = {}) {
       return;
     }
 
-    const ws = ensureConnected();
-    if (useStaticFallback) {
-      executeStaticAction(type, fullPayload);
+    // Push to pendingQueue BEFORE calling ensureConnected so synchronous errors still flush it!
+    const message = { type, payload: fullPayload };
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(message));
       return;
     }
 
-    const message = { type, payload: fullPayload };
-    if (!ws) return;
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(message));
-    } else {
-      pendingQueue.push(message);
-    }
+    pendingQueue.push(message);
+    ensureConnected();
   }
 
   return {
