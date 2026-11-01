@@ -1,0 +1,6 @@
+{
+  "name": "Type Rush",
+  "description": "A colorful arcade-style browser typing game where players type words as quickly and accurately as possible to build combos and beat their best score.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

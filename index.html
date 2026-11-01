@@ -1,0 +1,1168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Type Rush — Cute Arcade Typing Game</title>
+    <meta
+      name="description"
+      content="Type Rush is a cute, colorful arcade-style browser typing game. Type words as quickly and accurately as possible solo or compete live 1v1 with a friend!"
+    />
+    <meta property="og:title" content="Type Rush — Cute Arcade Typing Game" />
+    <meta
+      property="og:description"
+      content="Type Rush is a cute, colorful arcade-style browser typing game. Type words as quickly and accurately as possible solo or compete live 1v1 with a friend!"
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body data-state="title" data-combo-tier="0" data-mode="solo">
+    <!-- Subtle Animated Background Layer (Floating Doodles, Stars, Bubbles & Confetti Canvas) -->
+    <div class="bg-doodle-layer" aria-hidden="true">
+      <svg class="bg-sticker bg-sticker-cloud-1" viewBox="0 0 120 70">
+        <path
+          d="M32 58h58a18 18 0 0 0 2-35.8A24 24 0 0 0 46 16a22 22 0 0 0-21.5 18.2A16 16 0 0 0 32 58z"
+          fill="#FFFFFF"
+          stroke="#2D2346"
+          stroke-width="3.5"
+          stroke-linejoin="round"
+        />
+        <circle cx="48" cy="38" r="2.8" fill="#2D2346" />
+        <circle cx="68" cy="38" r="2.8" fill="#2D2346" />
+        <path
+          d="M54 43q4 4 8 0"
+          fill="none"
+          stroke="#2D2346"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+        <ellipse cx="42" cy="41" rx="3.5" ry="2" fill="#FF8DA3" />
+        <ellipse cx="74" cy="41" rx="3.5" ry="2" fill="#FF8DA3" />
+      </svg>
+
+      <svg class="bg-sticker bg-sticker-star-1" viewBox="0 0 64 64">
+        <path
+          d="M32 6l7.5 15.8L57 24.2l-12.7 12.2 3 17.4L32 45.5 16.7 53.8l3-17.4L7 24.2l17.5-2.4z"
+          fill="#FFE066"
+          stroke="#2D2346"
+          stroke-width="3.5"
+          stroke-linejoin="round"
+        />
+      </svg>
+
+      <svg class="bg-sticker bg-sticker-bolt" viewBox="0 0 64 64">
+        <path
+          d="M36 6L14 35h16l-4 23 24-30H34z"
+          fill="#7DD3FC"
+          stroke="#2D2346"
+          stroke-width="3.5"
+          stroke-linejoin="round"
+        />
+      </svg>
+
+      <svg class="bg-sticker bg-sticker-heart" viewBox="0 0 64 64">
+        <path
+          d="M32 54s-20-12.6-20-26A11.5 11.5 0 0 1 32 19a11.5 11.5 0 0 1 20 9c0 13.4-20 26-20 26z"
+          fill="#FF8DA3"
+          stroke="#2D2346"
+          stroke-width="3.5"
+          stroke-linejoin="round"
+        />
+      </svg>
+
+      <svg class="bg-sticker bg-sticker-cloud-2" viewBox="0 0 120 70">
+        <path
+          d="M32 58h58a18 18 0 0 0 2-35.8A24 24 0 0 0 46 16a22 22 0 0 0-21.5 18.2A16 16 0 0 0 32 58z"
+          fill="#FFFFFF"
+          stroke="#2D2346"
+          stroke-width="3.5"
+          stroke-linejoin="round"
+        />
+      </svg>
+
+      <svg class="bg-sticker bg-sticker-sparkle" viewBox="0 0 64 64">
+        <path
+          d="M32 6c3 15 11 23 26 26-15 3-23 11-26 26-3-15-11-23-26-26 15-3 23-11 26-26z"
+          fill="#6EE7B7"
+          stroke="#2D2346"
+          stroke-width="3.5"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </div>
+
+    <canvas id="arcade-canvas" aria-hidden="true"></canvas>
+
+    <main id="game-shell" class="game-shell">
+      <!-- ==========================================
+           1. MAIN / HOME SCREEN
+           ========================================== -->
+      <section id="screen-title" class="screen screen-enter" aria-label="Type Rush Main Menu">
+        <div class="arcade-cabinet-card title-cabinet">
+          <!-- Cute Corner Sticker Doodles on Home Card -->
+          <div class="cabinet-sticker sticker-top-left" aria-hidden="true">
+            <svg viewBox="0 0 56 56">
+              <rect
+                x="6"
+                y="10"
+                width="44"
+                height="38"
+                rx="12"
+                fill="#A7F3D0"
+                stroke="#2D2346"
+                stroke-width="3.5"
+              />
+              <circle cx="21" cy="27" r="3" fill="#2D2346" />
+              <circle cx="35" cy="27" r="3" fill="#2D2346" />
+              <path
+                d="M24 33q4 4 8 0"
+                fill="none"
+                stroke="#2D2346"
+                stroke-width="2.5"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
+          <div class="cabinet-sticker sticker-top-right" aria-hidden="true">
+            <svg viewBox="0 0 56 56">
+              <path
+                d="M28 6l6 13.5 14.5 2-10.5 10.2 2.5 14.5L28 39.2 15.5 46.2 18 31.7 7.5 21.5 22 19.5z"
+                fill="#FDE047"
+                stroke="#2D2346"
+                stroke-width="3.5"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+
+          <!-- Large Cute "TYPE RUSH" Sticker Logo Stage -->
+          <div class="logo-stage">
+            <svg
+              class="title-logo-svg"
+              viewBox="0 0 620 190"
+              role="img"
+              aria-label="TYPE RUSH Arcade Logo"
+            >
+              <defs>
+                <linearGradient id="keyGold" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#FFF380" />
+                  <stop offset="100%" stop-color="#FFD43B" />
+                </linearGradient>
+                <linearGradient id="keyCoral" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#FF9EB5" />
+                  <stop offset="100%" stop-color="#FF6B8B" />
+                </linearGradient>
+                <linearGradient id="keySky" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#93E2FF" />
+                  <stop offset="100%" stop-color="#38BDF8" />
+                </linearGradient>
+                <linearGradient id="keyMint" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#8CE99A" />
+                  <stop offset="100%" stop-color="#34D399" />
+                </linearGradient>
+              </defs>
+
+              <!-- Cute Sticker Sparkles & Doodle Accents -->
+              <path
+                d="M40 42 L46 24 L52 42 L70 48 L52 54 L46 72 L40 54 L22 48 Z"
+                fill="#FFD43B"
+                stroke="#2D2346"
+                stroke-width="3.5"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M574 34 L579 18 L584 34 L600 39 L584 44 L579 60 L574 44 L558 39 Z"
+                fill="#FF8DA3"
+                stroke="#2D2346"
+                stroke-width="3.5"
+                stroke-linejoin="round"
+              />
+              <circle
+                cx="82"
+                cy="148"
+                r="8"
+                fill="#7DD3FC"
+                stroke="#2D2346"
+                stroke-width="3.5"
+              />
+              <circle
+                cx="542"
+                cy="148"
+                r="9"
+                fill="#6EE7B7"
+                stroke="#2D2346"
+                stroke-width="3.5"
+              />
+
+              <!-- 3D Keycap Row: T Y P E -->
+              <g transform="translate(86, 12)">
+                <!-- Key T -->
+                <rect x="0" y="11" width="96" height="82" rx="24" fill="#2D2346" />
+                <rect
+                  x="0"
+                  y="0"
+                  width="96"
+                  height="80"
+                  rx="24"
+                  fill="url(#keyGold)"
+                  stroke="#2D2346"
+                  stroke-width="5"
+                />
+                <path
+                  d="M18 14h24"
+                  stroke="#FFFFFF"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  opacity="0.8"
+                />
+                <text
+                  x="48"
+                  y="58"
+                  text-anchor="middle"
+                  fill="#2D2346"
+                  font-family="Fredoka, sans-serif"
+                  font-weight="700"
+                  font-size="54"
+                >
+                  T
+                </text>
+
+                <!-- Key Y -->
+                <rect x="112" y="11" width="96" height="82" rx="24" fill="#2D2346" />
+                <rect
+                  x="112"
+                  y="0"
+                  width="96"
+                  height="80"
+                  rx="24"
+                  fill="url(#keyCoral)"
+                  stroke="#2D2346"
+                  stroke-width="5"
+                />
+                <path
+                  d="M130 14h24"
+                  stroke="#FFFFFF"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  opacity="0.75"
+                />
+                <text
+                  x="160"
+                  y="58"
+                  text-anchor="middle"
+                  fill="#FFFFFF"
+                  font-family="Fredoka, sans-serif"
+                  font-weight="700"
+                  font-size="54"
+                >
+                  Y
+                </text>
+
+                <!-- Key P -->
+                <rect x="224" y="11" width="96" height="82" rx="24" fill="#2D2346" />
+                <rect
+                  x="224"
+                  y="0"
+                  width="96"
+                  height="80"
+                  rx="24"
+                  fill="url(#keySky)"
+                  stroke="#2D2346"
+                  stroke-width="5"
+                />
+                <path
+                  d="M242 14h24"
+                  stroke="#FFFFFF"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  opacity="0.8"
+                />
+                <text
+                  x="272"
+                  y="58"
+                  text-anchor="middle"
+                  fill="#2D2346"
+                  font-family="Fredoka, sans-serif"
+                  font-weight="700"
+                  font-size="54"
+                >
+                  P
+                </text>
+
+                <!-- Key E -->
+                <rect x="336" y="11" width="96" height="82" rx="24" fill="#2D2346" />
+                <rect
+                  x="336"
+                  y="0"
+                  width="96"
+                  height="80"
+                  rx="24"
+                  fill="url(#keyMint)"
+                  stroke="#2D2346"
+                  stroke-width="5"
+                />
+                <path
+                  d="M354 14h24"
+                  stroke="#FFFFFF"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  opacity="0.8"
+                />
+                <text
+                  x="384"
+                  y="58"
+                  text-anchor="middle"
+                  fill="#2D2346"
+                  font-family="Fredoka, sans-serif"
+                  font-weight="700"
+                  font-size="54"
+                >
+                  E
+                </text>
+              </g>
+
+              <!-- RUSH! Sticker Plaque -->
+              <g transform="translate(130, 104)">
+                <rect x="0" y="10" width="360" height="68" rx="24" fill="#2D2346" />
+                <rect
+                  x="0"
+                  y="0"
+                  width="360"
+                  height="66"
+                  rx="24"
+                  fill="#FFFFFF"
+                  stroke="#2D2346"
+                  stroke-width="5"
+                />
+                <text
+                  x="180"
+                  y="48"
+                  text-anchor="middle"
+                  fill="#2D2346"
+                  font-family="Fredoka, sans-serif"
+                  font-weight="700"
+                  font-size="44"
+                  letter-spacing="6"
+                >
+                  RUSH!
+                </text>
+              </g>
+            </svg>
+            <h1 class="sr-only">TYPE RUSH</h1>
+            <p class="title-tagline">
+              Pop the keycaps, chain sparkly combos, and race solo or 1v1 with a friend!
+            </p>
+          </div>
+
+          <!-- Dedicated Best Score, Best WPM & Top Combo Cards -->
+          <div class="home-record-cards" aria-label="Player Records">
+            <div class="record-card record-card-score">
+              <div class="record-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M12 2l2.9 6.1L21.5 9l-4.8 4.6 1.2 6.6L12 17l-5.9 3.2 1.2-6.6L2.5 9l6.6-.9z"
+                    fill="#FFD43B"
+                    stroke="#2D2346"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </div>
+              <div class="record-card-body">
+                <span class="trophy-kicker">BEST SCORE</span>
+                <span id="title-best-score" class="trophy-value tabular-nums">0</span>
+              </div>
+            </div>
+
+            <div class="record-card record-card-wpm">
+              <div class="record-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M13 2L4 14h7l-1 8 9-12h-7z"
+                    fill="#38BDF8"
+                    stroke="#2D2346"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </div>
+              <div class="record-card-body">
+                <span class="trophy-kicker">BEST WPM</span>
+                <span id="title-best-wpm" class="trophy-value tabular-nums">0</span>
+              </div>
+            </div>
+
+            <div class="record-card record-card-combo">
+              <div class="record-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M12 21s-8-5.3-8-11a4.8 4.8 0 0 1 8-3.6A4.8 4.8 0 0 1 20 10c0 5.7-8 11-8 11z"
+                    fill="#FF6B8B"
+                    stroke="#2D2346"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </div>
+              <div class="record-card-body">
+                <span class="trophy-kicker">TOP COMBO</span>
+                <span id="title-best-combo" class="trophy-value tabular-nums">0x</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Difficulty Mode Selector -->
+          <div class="difficulty-selector" role="group" aria-label="Select Word Difficulty">
+            <button
+              type="button"
+              class="diff-tab active"
+              data-difficulty="all"
+              aria-pressed="true"
+            >
+              All Mix
+            </button>
+            <button type="button" class="diff-tab" data-difficulty="easy" aria-pressed="false">
+              Easy
+            </button>
+            <button type="button" class="diff-tab" data-difficulty="medium" aria-pressed="false">
+              Medium
+            </button>
+            <button type="button" class="diff-tab" data-difficulty="hard" aria-pressed="false">
+              Hard
+            </button>
+          </div>
+
+          <!-- Primary Animated PLAY CTA, 1v1 Invite Friend Button & Utility Buttons -->
+          <div class="menu-actions">
+            <button
+              type="button"
+              id="btn-play"
+              class="btn-arcade btn-arcade-play btn-play-pulse"
+              data-start="true"
+            >
+              <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 5v14l12-7z" fill="currentColor" />
+              </svg>
+              <span>PLAY NOW</span>
+            </button>
+
+            <button
+              type="button"
+              id="btn-invite-friend"
+              class="btn-arcade btn-arcade-friend"
+            >
+              <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"
+                  fill="currentColor"
+                />
+              </svg>
+              <span>INVITE FRIEND (1V1)</span>
+            </button>
+
+            <div class="menu-secondary-row">
+              <button type="button" id="btn-howto" class="btn-arcade btn-arcade-secondary">
+                <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="9"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  />
+                  <path
+                    d="M9.5 9a2.5 2.5 0 1 1 3.8 2.1c-.9.6-1.3 1.1-1.3 2.4M12 17h.01"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                <span>How to Play</span>
+              </button>
+
+              <button type="button" id="btn-settings" class="btn-arcade btn-arcade-secondary">
+                <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7zm7.4-2.5c.04-.32.06-.66.06-1s-.02-.68-.06-1l2.1-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a7.2 7.2 0 0 0-1.73-1l-.38-2.65A.49.49 0 0 0 14 2h-4a.49.49 0 0 0-.49.42l-.38 2.65c-.63.25-1.21.59-1.73 1l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.49.49 0 0 0 .12.64L4.54 11c-.04.32-.06.66-.06 1s.02.68.06 1l-2.1 1.65a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .6.22l2.49-1c.52.41 1.1.75 1.73 1l.38 2.65c.05.24.25.42.49.42h4c.24 0 .44-.18.49-.42l.38-2.65c.63-.25 1.21-.59 1.73-1l2.49 1a.5.5 0 0 0 .6-.22l2-3.46a.5.5 0 0 0-.12-.64L19.4 13z"
+                    fill="currentColor"
+                  />
+                </svg>
+                <span>Settings</span>
+              </button>
+            </div>
+          </div>
+
+          <p class="control-hint">
+            Type each word accurately · Chain 5x/10x/20x Combos · Solo or 1v1 Same-Word Race
+          </p>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           2. ACTIVE GAMEPLAY SCREEN
+           ========================================== -->
+      <section id="screen-game" class="screen" aria-label="Type Rush Gameplay" hidden>
+        <!-- Top Arcade HUD Bar -->
+        <div class="hud-bar" role="region" aria-label="Game Status HUD">
+          <!-- Left Cluster: Score & Prominent Tiered Combo -->
+          <div class="hud-cluster hud-cluster-left">
+            <div id="hud-score-card" class="hud-tile hud-tile-score">
+              <span class="hud-kicker">SCORE</span>
+              <span id="hud-score" class="hud-hero tabular-nums" data-testid="hud-score">0</span>
+            </div>
+
+            <div id="hud-combo-card" class="hud-tile hud-tile-combo" data-tier="0">
+              <div class="combo-top-row">
+                <span id="hud-combo-label" class="hud-kicker">COMBO</span>
+                <span id="hud-multiplier" class="combo-multiplier-tag tabular-nums">1x MULT</span>
+              </div>
+              <div class="combo-main-row">
+                <span id="hud-combo" class="hud-hero tabular-nums" data-testid="hud-combo">0x</span>
+                <span id="combo-tier-badge" class="combo-tier-badge" hidden>STREAK!</span>
+              </div>
+              <div class="combo-meter-track" aria-hidden="true">
+                <div id="combo-meter-fill" class="combo-meter-fill"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Center Cluster: Countdown Timer & Vitality Hearts -->
+          <div class="hud-cluster hud-cluster-center">
+            <div id="hud-timer-card" class="hud-tile hud-tile-timer">
+              <div class="timer-header">
+                <span class="hud-kicker">TIME LEFT</span>
+                <span id="hud-timer" class="hud-hero tabular-nums" data-testid="hud-timer"
+                  >60s</span
+                >
+              </div>
+              <div class="timer-bar-track" aria-hidden="true">
+                <div id="timer-bar-fill" class="timer-bar-fill"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Cluster: Telemetry (WPM + Accuracy) & Utility Actions -->
+          <div class="hud-cluster hud-cluster-right">
+            <div class="hud-tile hud-tile-stat">
+              <span class="hud-kicker">WPM</span>
+              <span id="hud-wpm" class="hud-hero tabular-nums" data-testid="hud-wpm">0</span>
+            </div>
+
+            <div class="hud-tile hud-tile-stat">
+              <span class="hud-kicker">ACCURACY</span>
+              <span id="hud-accuracy" class="hud-hero tabular-nums" data-testid="hud-accuracy"
+                >100%</span
+              >
+            </div>
+
+            <div class="hud-actions">
+              <button
+                type="button"
+                id="btn-sound-hud"
+                class="btn-hud-icon"
+                aria-label="Toggle Sound Effects"
+                title="Toggle Sound"
+              >
+                <svg id="icon-sound-on" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <svg id="icon-sound-off" viewBox="0 0 24 24" aria-hidden="true" hidden>
+                  <path
+                    d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                id="btn-pause"
+                class="btn-hud-pause"
+                aria-label="Pause Game"
+                title="Pause Game (Esc)"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="6" y="4" width="4.5" height="16" rx="1.5" fill="currentColor" />
+                  <rect x="13.5" y="4" width="4.5" height="16" rx="1.5" fill="currentColor" />
+                </svg>
+                <span>PAUSE</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Center Word Arena Stage -->
+        <div id="word-arena" class="word-arena">
+          <div class="arena-stack">
+            <!-- 1v1 Live Opponent Progress Card (Visible during Invite Friend matches) -->
+            <div
+              id="opponent-hud-card"
+              class="opponent-hud-card"
+              role="region"
+              aria-label="Opponent Live Progress"
+              data-testid="opponent-card"
+              hidden
+            >
+              <div class="opp-top-row">
+                <div class="opp-identity">
+                  <span class="opp-vs-tag">VS</span>
+                  <span id="opp-name" class="opp-name" data-testid="opp-name">Friend</span>
+                  <span id="opp-lead-badge" class="opp-lead-badge">TIED!</span>
+                </div>
+
+                <div class="opp-metrics">
+                  <div class="opp-metric-item">
+                    <span class="opp-metric-kicker">SCORE</span>
+                    <span id="opp-score" class="opp-metric-val tabular-nums" data-testid="opp-score"
+                      >0</span
+                    >
+                  </div>
+                  <div class="opp-metric-item">
+                    <span class="opp-metric-kicker">COMBO</span>
+                    <span id="opp-combo" class="opp-metric-val tabular-nums" data-testid="opp-combo"
+                      >0x</span
+                    >
+                  </div>
+                  <div class="opp-metric-item">
+                    <span class="opp-metric-kicker">WPM</span>
+                    <span id="opp-wpm" class="opp-metric-val tabular-nums" data-testid="opp-wpm"
+                      >0</span
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <div class="opp-progress-row">
+                <span id="opp-word-label" class="opp-word-label tabular-nums">WORD #1</span>
+                <div class="opp-progress-track" aria-hidden="true">
+                  <div id="opp-progress-fill" class="opp-progress-fill"></div>
+                </div>
+                <span id="opp-status-text" class="opp-status-text">TYPING...</span>
+              </div>
+            </div>
+
+            <!-- Main Word Stage Card -->
+            <div id="word-card" class="arcade-cabinet-card word-stage-card" data-combo-tier="0">
+              <!-- Cute Floating Combo Celebration Callout (non-obstructive) -->
+              <div
+                id="combo-celebration-toast"
+                class="combo-celebration-toast"
+                aria-hidden="true"
+              ></div>
+
+              <!-- Word Metadata Header -->
+              <div class="word-meta-row">
+                <span id="word-difficulty-label" class="word-meta-item">EASY TIER</span>
+                <span class="word-meta-sep" aria-hidden="true">·</span>
+                <span id="word-points-preview" class="word-meta-item tabular-nums">+20 PTS</span>
+                <span class="word-meta-sep" aria-hidden="true">·</span>
+                <span id="word-completed-count" class="word-meta-item tabular-nums">0 WORDS</span>
+              </div>
+
+              <!-- Live Visual Feedback Banner -->
+              <div class="feedback-slot" aria-live="polite">
+                <div id="feedback-banner" class="feedback-banner">
+                  Type the letters below to start your streak!
+                </div>
+              </div>
+
+              <!-- Prominent Center Target Word Display -->
+              <div
+                id="word-display"
+                class="word-display"
+                role="region"
+                aria-label="Target word to type"
+                data-testid="target-word"
+                data-word=""
+              ></div>
+
+              <!-- Attractive Typing Input Area -->
+              <div class="input-dock">
+                <label for="typing-input" class="sr-only">Type the current word</label>
+                <div id="input-wrapper" class="input-wrapper">
+                  <span class="input-prompt-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path
+                        d="M4 7h16a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2zm3 3v2m4-2v2m4-2v2m4-2v2M8 14h8"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                  </span>
+                  <input
+                    id="typing-input"
+                    type="text"
+                    class="typing-input"
+                    placeholder="Type the word here..."
+                    autocomplete="off"
+                    autocapitalize="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                    inputmode="text"
+                    enterkeyhint="done"
+                  />
+                  <span id="input-progress-badge" class="input-progress-badge tabular-nums"
+                    >0/5</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           3. GAME OVER RESULTS SCREEN (SOLO & 1V1)
+           ========================================== -->
+      <section id="screen-gameover" class="screen" aria-label="Game Over Summary" hidden>
+        <div id="gameover-card" class="arcade-cabinet-card gameover-cabinet">
+          <div id="gameover-record-badge" class="record-celebration" hidden>
+            <svg class="record-star-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 2l2.9 6.1L21.5 9l-4.8 4.6 1.2 6.6L12 17l-5.9 3.2 1.2-6.6L2.5 9l6.6-.9z"
+                fill="currentColor"
+              />
+            </svg>
+            <span>NEW BEST SCORE!</span>
+          </div>
+
+          <p id="gameover-reason-kicker" class="gameover-kicker">ROUND COMPLETE</p>
+          <h2 id="gameover-title" class="gameover-title">GAME OVER</h2>
+
+          <!-- 1v1 Head-to-Head Comparison Card (Shown in 1v1 Mode) -->
+          <div
+            id="gameover-versus-panel"
+            class="gameover-versus-panel"
+            data-testid="versus-results"
+            hidden
+          >
+            <div class="vs-column vs-column-me">
+              <span class="vs-player-tag">YOU</span>
+              <strong id="vs-my-name" class="vs-player-name">Player 1</strong>
+              <span id="vs-my-score" class="vs-big-score tabular-nums" data-testid="vs-my-score"
+                >0</span
+              >
+              <span class="vs-sub-stat tabular-nums"
+                ><span id="vs-my-wpm">0</span> WPM · <span id="vs-my-acc">100%</span> ACC ·
+                <span id="vs-my-combo">0x</span></span
+              >
+            </div>
+
+            <div class="vs-divider-badge" aria-hidden="true">VS</div>
+
+            <div class="vs-column vs-column-opp">
+              <span class="vs-player-tag">FRIEND</span>
+              <strong id="vs-opp-name" class="vs-player-name">Player 2</strong>
+              <span id="vs-opp-score" class="vs-big-score tabular-nums" data-testid="vs-opp-score"
+                >0</span
+              >
+              <span class="vs-sub-stat tabular-nums"
+                ><span id="vs-opp-wpm">0</span> WPM · <span id="vs-opp-acc">100%</span> ACC ·
+                <span id="vs-opp-combo">0x</span></span
+              >
+            </div>
+          </div>
+
+          <!-- Primary Final Score Display -->
+          <div class="gameover-hero-score">
+            <span class="gameover-score-label">YOUR FINAL SCORE</span>
+            <span id="go-score" class="gameover-score-number tabular-nums" data-testid="go-score"
+              >0</span
+            >
+          </div>
+
+          <!-- Required Telemetry Breakdown Grid -->
+          <div class="gameover-stats-grid">
+            <div class="gameover-stat-box stat-box-wpm">
+              <span class="gameover-stat-kicker">WPM</span>
+              <span id="go-wpm" class="gameover-stat-val tabular-nums" data-testid="go-wpm"
+                >0</span
+              >
+            </div>
+
+            <div class="gameover-stat-box stat-box-acc">
+              <span class="gameover-stat-kicker">ACCURACY</span>
+              <span
+                id="go-accuracy"
+                class="gameover-stat-val tabular-nums"
+                data-testid="go-accuracy"
+                >100%</span
+              >
+            </div>
+
+            <div class="gameover-stat-box stat-box-combo">
+              <span class="gameover-stat-kicker">HIGHEST COMBO</span>
+              <span id="go-combo" class="gameover-stat-val tabular-nums" data-testid="go-combo"
+                >0x</span
+              >
+            </div>
+
+            <div class="gameover-stat-box gameover-stat-best">
+              <span class="gameover-stat-kicker">BEST SCORE</span>
+              <span
+                id="go-best-score"
+                class="gameover-stat-val tabular-nums"
+                data-testid="go-best-score"
+                >0</span
+              >
+            </div>
+          </div>
+
+          <!-- Game Over Actions -->
+          <div class="gameover-actions">
+            <button
+              type="button"
+              id="btn-play-again"
+              class="btn-arcade btn-arcade-play"
+              data-start="true"
+            >
+              <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+                  fill="currentColor"
+                />
+              </svg>
+              <span id="btn-play-again-label">PLAY AGAIN</span>
+            </button>
+
+            <button type="button" id="btn-home" class="btn-arcade btn-arcade-secondary">
+              <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3l9-8z"
+                  fill="currentColor"
+                />
+              </svg>
+              <span>HOME</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           4. 1V1 INVITE FRIEND MULTIPLAYER MODAL
+           ========================================== -->
+      <div
+        id="modal-multiplayer"
+        class="modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mp-modal-title"
+        hidden
+      >
+        <div class="arcade-cabinet-card modal-card mp-modal-card">
+          <p class="modal-kicker">SAME-WORD REAL-TIME RACE</p>
+          <h2 id="mp-modal-title" class="modal-title">INVITE FRIEND (1V1)</h2>
+
+          <!-- Step 1: Create or Join Room -->
+          <div id="mp-step-entry" class="mp-step-view">
+            <div class="mp-field-group">
+              <label for="mp-player-name" class="mp-label">Your Arcade Nickname</label>
+              <input
+                id="mp-player-name"
+                type="text"
+                class="mp-text-input"
+                placeholder="Enter your name..."
+                maxlength="16"
+                value="Player 1"
+              />
+            </div>
+
+            <div class="mp-entry-actions">
+              <button type="button" id="btn-mp-create" class="btn-arcade btn-arcade-play">
+                <span>CREATE ROOM &amp; INVITE</span>
+              </button>
+
+              <div class="mp-or-divider">
+                <span>OR JOIN A FRIEND'S ROOM</span>
+              </div>
+
+              <div class="mp-join-row">
+                <label for="mp-join-code" class="sr-only">Enter 4-letter Room Code</label>
+                <input
+                  id="mp-join-code"
+                  type="text"
+                  class="mp-code-input tabular-nums"
+                  placeholder="CODE"
+                  maxlength="4"
+                  autocomplete="off"
+                />
+                <button type="button" id="btn-mp-join" class="btn-arcade btn-arcade-friend">
+                  <span>JOIN ROOM</span>
+                </button>
+              </div>
+            </div>
+
+            <p id="mp-error-msg" class="mp-error-msg" role="alert" hidden></p>
+
+            <div class="modal-footer">
+              <button type="button" id="btn-close-mp" class="btn-arcade btn-arcade-secondary">
+                <span>BACK TO MENU</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 2: Active Waiting Room Lobby -->
+          <div id="mp-step-room" class="mp-step-view" hidden>
+            <div class="mp-room-banner">
+              <div class="mp-code-box">
+                <span class="mp-code-kicker">ROOM CODE</span>
+                <span
+                  id="mp-room-code-display"
+                  class="mp-room-code-val tabular-nums"
+                  data-testid="mp-room-code"
+                  >----</span
+                >
+              </div>
+
+              <button type="button" id="btn-mp-copy-link" class="btn-mp-copy">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+                    fill="currentColor"
+                  />
+                </svg>
+                <span id="mp-copy-label">Copy Invite Link</span>
+              </button>
+            </div>
+
+            <!-- Connected Players Versus Slots -->
+            <div class="mp-slots-grid">
+              <div id="mp-slot-p1" class="mp-player-slot slot-ready">
+                <span class="slot-role-tag">PLAYER 1 (HOST)</span>
+                <strong id="mp-p1-name" class="slot-player-name">Player 1</strong>
+                <span id="mp-p1-status" class="slot-status-pill">READY</span>
+              </div>
+
+              <div id="mp-slot-p2" class="mp-player-slot">
+                <span class="slot-role-tag">PLAYER 2 (FRIEND)</span>
+                <strong id="mp-p2-name" class="slot-player-name">Waiting...</strong>
+                <span id="mp-p2-status" class="slot-status-pill">INVITE FRIEND</span>
+              </div>
+            </div>
+
+            <p id="mp-lobby-rule-summary" class="mp-lobby-rule-summary">
+              Same Word Sequence · Independent Pace · Highest Score Wins
+            </p>
+
+            <div class="modal-actions-stack">
+              <button
+                type="button"
+                id="btn-mp-start-match"
+                class="btn-arcade btn-arcade-play"
+                disabled
+              >
+                <span id="btn-mp-start-label">WAITING FOR FRIEND...</span>
+              </button>
+
+              <button type="button" id="btn-mp-leave" class="btn-arcade btn-arcade-secondary">
+                <span>LEAVE ROOM</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           5. PAUSE MODAL OVERLAY
+           ========================================== -->
+      <div
+        id="modal-pause"
+        class="modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pause-modal-title"
+        hidden
+      >
+        <div class="arcade-cabinet-card modal-card">
+          <p class="modal-kicker">GAME PAUSED</p>
+          <h2 id="pause-modal-title" class="modal-title">TAKE A BREATHER</h2>
+
+          <div class="pause-summary-row">
+            <div class="pause-stat">
+              <span class="pause-stat-label">SCORE</span>
+              <span id="pause-score" class="pause-stat-value tabular-nums">0</span>
+            </div>
+            <div class="pause-stat">
+              <span class="pause-stat-label">COMBO</span>
+              <span id="pause-combo" class="pause-stat-value tabular-nums">0x</span>
+            </div>
+            <div class="pause-stat">
+              <span class="pause-stat-label">TIME LEFT</span>
+              <span id="pause-time" class="pause-stat-value tabular-nums">60s</span>
+            </div>
+          </div>
+
+          <div class="modal-actions-stack">
+            <button type="button" id="btn-resume" class="btn-arcade btn-arcade-play">
+              <span>RESUME GAME</span>
+            </button>
+            <button type="button" id="btn-restart-pause" class="btn-arcade btn-arcade-secondary">
+              <span>RESTART</span>
+            </button>
+            <button type="button" id="btn-home-pause" class="btn-arcade btn-arcade-secondary">
+              <span>HOME MENU</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           6. SETTINGS MODAL OVERLAY
+           ========================================== -->
+      <div
+        id="modal-settings"
+        class="modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-modal-title"
+        hidden
+      >
+        <div class="arcade-cabinet-card modal-card">
+          <p class="modal-kicker">ARCADE OPTIONS</p>
+          <h2 id="settings-modal-title" class="modal-title">SETTINGS</h2>
+
+          <div class="settings-list">
+            <!-- Sound Toggle -->
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">Sound Effects</span>
+                <span class="setting-desc">Synthesized arcade chimes and key clicks</span>
+              </div>
+              <button
+                type="button"
+                id="setting-sound-toggle"
+                class="btn-setting-toggle active"
+                aria-pressed="true"
+              >
+                ON
+              </button>
+            </div>
+
+            <!-- Round Duration -->
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">Round Timer</span>
+                <span class="setting-desc">Countdown duration per session</span>
+              </div>
+              <div class="setting-seg-group" role="group" aria-label="Round Timer">
+                <button type="button" class="seg-btn" data-duration="30">30s</button>
+                <button type="button" class="seg-btn active" data-duration="60">60s</button>
+                <button type="button" class="seg-btn" data-duration="90">90s</button>
+              </div>
+            </div>
+
+            <!-- Reset Saved Data -->
+            <div class="setting-row setting-row-danger">
+              <div class="setting-info">
+                <span class="setting-label">High Score Records</span>
+                <span id="reset-status-text" class="setting-desc"
+                  >Clear saved Best Score, WPM, and Combo</span
+                >
+              </div>
+              <button type="button" id="btn-reset-records" class="btn-setting-danger">
+                Reset Data
+              </button>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" id="btn-close-settings" class="btn-arcade btn-arcade-play">
+              <span>SAVE &amp; CLOSE</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           7. HOW TO PLAY MODAL OVERLAY
+           ========================================== -->
+      <div
+        id="modal-howto"
+        class="modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="howto-modal-title"
+        hidden
+      >
+        <div class="arcade-cabinet-card modal-card">
+          <p class="modal-kicker">ARCADE GUIDE</p>
+          <h2 id="howto-modal-title" class="modal-title">HOW TO PLAY</h2>
+
+          <ol class="howto-steps">
+            <li class="howto-step">
+              <span class="step-num">1</span>
+              <div class="step-body">
+                <strong>Type the Center Word</strong>
+                <p>
+                  Type the letters shown on the center keycaps into the input field. Each correct
+                  letter pops and turns mint green!
+                </p>
+              </div>
+            </li>
+            <li class="howto-step">
+              <span class="step-num">2</span>
+              <div class="step-body">
+                <strong>Build Sparkly Combos</strong>
+                <p>
+                  Every completed word increases your Combo. Reach <strong>5x</strong>,
+                  <strong>10x</strong>, and <strong>20x</strong> streaks to unlock special arcade
+                  celebrations and up to a <strong>4x Score Multiplier</strong>!
+                </p>
+              </div>
+            </li>
+            <li class="howto-step">
+              <span class="step-num">3</span>
+              <div class="step-body">
+                <strong>Invite a Friend (1v1 Mode)</strong>
+                <p>
+                  Create a room or share an invite link to race a friend at the same time on the
+                  exact same word sequence. Watch their live progress bar and score!
+                </p>
+              </div>
+            </li>
+            <li class="howto-step">
+              <span class="step-num">4</span>
+              <div class="step-body">
+                <strong>Beat the Clock</strong>
+                <p>
+                  Keep typing until the countdown timer ends. Mistakes reset your combo streak, so
+                  stay accurate — highest score wins!
+                </p>
+              </div>
+            </li>
+          </ol>
+
+          <div class="modal-footer">
+            <button type="button" id="btn-close-howto" class="btn-arcade btn-arcade-play">
+              <span>GOT IT!</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
