@@ -950,66 +950,69 @@ body {
   color: var(--accent-coral-deep);
 }
 
-/* Cute 3D Keycap Word Display */
+/* Unified Full-Word Display Banner (Easy-to-Read Continuous Word) */
 .word-display {
-  display: flex;
+  display: inline-flex;
   flex-wrap: nowrap;
-  align-items: center;
+  align-items: baseline;
   justify-content: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 82px;
-  padding: 6px 2px;
+  gap: 0;
+  width: auto;
+  min-width: min(340px, 92%);
+  max-width: 100%;
+  min-height: 96px;
+  padding: 20px 38px 24px;
+  background: #fffdf5;
+  border: 3.5px solid var(--ink-dark);
+  border-radius: 24px;
+  box-shadow: 0 7px 0 var(--ink-dark);
 }
 
 .letter-tile {
   position: relative;
-  width: clamp(36px, 6vw, 54px);
-  height: clamp(48px, 7vw, 64px);
-  flex-shrink: 1;
-  background: var(--surface-soft);
+  width: auto;
+  height: auto;
+  padding: 0 1px;
+  background: transparent;
   color: var(--ink-dark);
-  border: 3.5px solid var(--ink-dark);
-  border-radius: 16px;
-  box-shadow: 0 7px 0 var(--ink-dark);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: clamp(20px, 3.2vw, 30px);
-  font-weight: 800;
-  text-transform: uppercase;
+  border: none;
+  border-radius: 6px;
+  box-shadow: none;
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: clamp(40px, 5.8vw, 58px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.015em;
+  text-transform: lowercase;
   transition:
-    transform 0.12s cubic-bezier(0.16, 1, 0.3, 1),
-    background-color 0.12s ease,
-    color 0.12s ease,
-    box-shadow 0.12s ease;
+    color 0.08s ease,
+    transform 0.08s ease;
 }
 
 /* Correct / Matched Letter State */
 .letter-tile.letter-correct {
-  background: var(--accent-mint-bright);
-  color: var(--ink-dark);
-  box-shadow: 0 3px 0 var(--ink-dark);
-  transform: translateY(4px) scale(0.98);
+  background: transparent;
+  color: #12b886;
+  box-shadow: none;
+  transform: none;
 }
 
 /* Current Active Target Letter State */
 .letter-tile.letter-current {
-  background: var(--surface-cream);
-  border-color: var(--ink-dark);
-  transform: translateY(-3px);
-  box-shadow:
-    0 10px 0 var(--ink-dark),
-    0 0 0 4px rgba(255, 212, 59, 0.55);
+  background: rgba(255, 212, 59, 0.32);
+  color: var(--ink-dark);
+  transform: none;
+  box-shadow: none;
 }
 
 .letter-tile.letter-current::after {
   content: '';
   position: absolute;
-  bottom: 7px;
-  width: 22px;
-  height: 4.5px;
+  bottom: -4px;
+  left: 4%;
+  width: 92%;
+  height: 5px;
   border-radius: 99px;
   background: var(--accent-coral);
   animation: caretBlink 0.85s ease-in-out infinite;
@@ -1027,9 +1030,9 @@ body {
 
 /* Mistake Flash on Letter Tile */
 .letter-tile.letter-mistake {
-  background: var(--accent-coral);
-  color: #ffffff;
-  box-shadow: 0 4px 0 var(--ink-dark);
+  background: rgba(255, 107, 139, 0.28);
+  color: var(--accent-coral-deep);
+  box-shadow: none;
 }
 
 /* Word Complete & Mistake Card Animations */
@@ -1632,12 +1635,17 @@ body {
     box-shadow: 0 4px 0 var(--ink-dark);
   }
 
+  .word-display {
+    min-height: 74px;
+    padding: 12px 20px;
+  }
+
   .letter-tile {
-    width: 44px;
-    height: 54px;
-    font-size: 24px;
-    border-radius: 14px;
-    box-shadow: 0 5px 0 var(--ink-dark);
+    width: auto;
+    height: auto;
+    font-size: clamp(28px, 7.5vw, 38px);
+    padding: 2px 3px;
+    box-shadow: none;
   }
 
   .typing-input {
@@ -1695,13 +1703,14 @@ body {
   }
 
   .word-display {
-    min-height: 56px;
+    min-height: 58px;
+    padding: 8px 20px;
   }
 
   .letter-tile {
-    width: 42px;
-    height: 48px;
-    font-size: 22px;
+    width: auto;
+    height: auto;
+    font-size: 30px;
   }
 
   .typing-input {

@@ -431,6 +431,9 @@ function renderWordKeycaps(wordObj, typedValue, mistakeIndex = -1) {
 
   dom.wordDisplay.innerHTML = tilesHtml;
   dom.inputProgressBadge.textContent = `${typedValue.length}/${word.length}`;
+  if (dom.typingInput) {
+    dom.typingInput.placeholder = word;
+  }
 }
 
 function renderOpponentHUD() {
